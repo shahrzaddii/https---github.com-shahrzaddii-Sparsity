@@ -176,6 +176,7 @@ class BinaryTrainNN():
             if all(norm < gradient_threshold for norm in gradient_norms):
                 print(f'Early stopping at Epoch {epoch + 1} due to small gradients.')
                 break
+            print('End of Iterations')
         
 
         return model, epoch_losses
