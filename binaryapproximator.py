@@ -60,6 +60,63 @@ class GeneralRegressionNN(nn.Module):
                 param.data = torch.where(param.data >= 0.5, torch.tensor(1.0), torch.tensor(0.0))
 
 
+class GeneralLogisticNN(nn.Module):
+    def __init__(self, input_size, hidden_size1, hidden_size2, hidden_size3, output_size):
+        super(GeneralLogisticNN, self).__init__()
+        self.hidden1 = nn.Linear(input_size, hidden_size1, bias=False)
+        self.hidden2 = nn.Linear(hidden_size1, hidden_size2, bias=True)
+        self.hidden3 = nn.Linear(hidden_size2, hidden_size3, bias=False)
+        self.output = nn.Linear(hidden_size3, output_size, bias=False)
+
+   
+    def forward(self, x):
+        x = self.hidden1(x)
+        x = self.hidden2(x)
+        x = torch.sigmoid(x)
+        x = self.hidden3(x)
+        x = torch.sigmoid(x)
+        x = self.output(x)
+        x = torch.sigmoid(x)
+        return x
+
+    
+    def predict(self, input):
+        self.eval()
+        input = torch.tensor(input, dtype=torch.float32)
+
+        with torch.no_grad():
+            output = self.forward(input)
+
+        self.train()
+        
+        return output.numpy()
+    
+    def binary_loss(self):
+        binary_loss = 0.0
+        w_ = []
+        for name, param in self.named_parameters():
+            if name == 'hidden3.weight':
+                w_.append(param.reshape(-1,1))
+            
+        for v in w_:
+            for v_i in v:
+                if torch.abs(v_i) < torch.abs(v_i-1):
+                    b = 0
+                else:
+                    b = 1
+                binary_loss += torch.sum(torch.tensor(b))
+        return binary_loss
+    
+    def binarise_model(self, layer=3):
+        layer_dict = {1: 'hidden1.weight', 2: 'hidden2.weight', 3:'hidden3.weight', 4:'output.weight'}
+        for name, param in self.named_parameters():
+            if name == layer_dict[layer]:
+                param.data = torch.where(param.data >= 0.5, torch.tensor(1.0), torch.tensor(0.0))
+
+
+
+
+
 class ToTensor(Dataset):
     """ Input arg* :  X, y """
     def __init__(self, X, y):
